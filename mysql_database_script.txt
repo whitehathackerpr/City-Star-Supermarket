@@ -1,0 +1,354 @@
+-- Create the database if it doesn't exist
+CREATE DATABASE IF NOT EXISTS City_Star_Supermarket;
+USE City_Star_Supermarket;
+select *from users;
+-- Users table
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    role ENUM('admin', 'staff') DEFAULT 'staff',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    last_login DATETIME,
+    INDEX idx_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Products table
+CREATE TABLE IF NOT EXISTS products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_name VARCHAR(255) NOT NULL,
+    description TEXT,
+    price DECIMAL(10,2) NOT NULL,
+    quantity INT NOT NULL DEFAULT 0,
+    category VARCHAR(100),
+    barcode VARCHAR(50) UNIQUE,
+    user_id INT,
+    min_stock_level INT DEFAULT 10,
+    max_stock_level INT DEFAULT 100,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_product_name (product_name),
+    INDEX idx_category (category),
+    INDEX idx_barcode (barcode)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Sales table
+CREATE TABLE IF NOT EXISTS sales (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    user_id INT,
+    quantity_sold INT NOT NULL,
+    unit_price DECIMAL(10,2) NOT NULL,
+    total_amount DECIMAL(10,2) NOT NULL,
+    payment_method ENUM('cash', 'card', 'other') DEFAULT 'cash',
+    sale_time DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_sale_time (sale_time),
+    INDEX idx_product_id (product_id),
+    INDEX idx_user_id (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Stock Movement table (for tracking stock changes)
+CREATE TABLE IF NOT EXISTS stock_movements (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    user_id INT,
+    movement_type ENUM('in', 'out', 'adjustment') NOT NULL,
+    quantity INT NOT NULL,
+    reason VARCHAR(255),
+    movement_time DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_movement_time (movement_time),
+    INDEX idx_product_id (product_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Categories table
+CREATE TABLE IF NOT EXISTS categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Suppliers table
+CREATE TABLE IF NOT EXISTS suppliers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    contact_person VARCHAR(100),
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    address TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_name (name),
+    INDEX idx_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Purchase Orders table
+CREATE TABLE IF NOT EXISTS purchase_orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    supplier_id INT NOT NULL,
+    user_id INT,
+    order_date DATETIME NOT NULL,
+    status ENUM('pending', 'ordered', 'received', 'cancelled') DEFAULT 'pending',
+    total_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_order_date (order_date),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Purchase Order Items table
+CREATE TABLE IF NOT EXISTS purchase_order_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    purchase_order_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(10,2) NOT NULL,
+    total_price DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    INDEX idx_purchase_order_id (purchase_order_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Audit Log table
+CREATE TABLE IF NOT EXISTS audit_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    action VARCHAR(255) NOT NULL,
+    table_name VARCHAR(100) NOT NULL,
+    record_id INT,
+    old_values JSON,
+    new_values JSON,
+    ip_address VARCHAR(45),
+    user_agent VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_created_at (created_at),
+    INDEX idx_action (action),
+    INDEX idx_table_name (table_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Create triggers for audit logging
+DELIMITER //
+
+CREATE TRIGGER products_after_insert
+AFTER INSERT ON products
+FOR EACH ROW
+BEGIN
+    INSERT INTO audit_log (action, table_name, record_id, new_values)
+    VALUES ('INSERT', 'products', NEW.id, JSON_OBJECT(
+        'product_name', NEW.product_name,
+        'price', NEW.price,
+        'quantity', NEW.quantity
+    ));
+END//
+
+CREATE TRIGGER products_after_update
+AFTER UPDATE ON products
+FOR EACH ROW
+BEGIN
+    INSERT INTO audit_log (action, table_name, record_id, old_values, new_values)
+    VALUES ('UPDATE', 'products', NEW.id, 
+    JSON_OBJECT(
+        'product_name', OLD.product_name,
+        'price', OLD.price,
+        'quantity', OLD.quantity
+    ),
+    JSON_OBJECT(
+        'product_name', NEW.product_name,
+        'price', NEW.price,
+        'quantity', NEW.quantity
+    ));
+END//
+
+CREATE TRIGGER products_after_delete
+AFTER DELETE ON products
+FOR EACH ROW
+BEGIN
+    INSERT INTO audit_log (action, table_name, record_id, old_values)
+    VALUES ('DELETE', 'products', OLD.id, JSON_OBJECT(
+        'product_name', OLD.product_name,
+        'price', OLD.price,
+        'quantity', OLD.quantity
+    ));
+END//
+
+DELIMITER ;
+
+-- Create views for common queries
+CREATE OR REPLACE VIEW vw_low_stock_products AS
+SELECT 
+    p.id,
+    p.product_name,
+    p.quantity,
+    p.min_stock_level,
+    (p.quantity <= p.min_stock_level) as needs_reorder
+FROM products p
+WHERE p.quantity <= p.min_stock_level
+AND p.is_active = TRUE;
+
+CREATE OR REPLACE VIEW vw_daily_sales_summary AS
+SELECT 
+    DATE(sale_time) as sale_date,
+    COUNT(*) as total_transactions,
+    SUM(quantity_sold) as total_items_sold,
+    SUM(total_amount) as total_revenue
+FROM sales
+GROUP BY DATE(sale_time)
+ORDER BY sale_date DESC;
+
+-- Insert initial admin user (password: admin123)
+INSERT INTO users (email, password, first_name, last_name, role)
+VALUES ('admin@citystar.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewLxH1t.PE60Ey2.', 'Admin', 'User', 'admin')
+ON DUPLICATE KEY UPDATE id=id;
+
+-- Insert some sample categories
+INSERT INTO categories (name, description) VALUES
+('Groceries', 'Basic grocery items'),
+('Beverages', 'Drinks and beverages'),
+('Snacks', 'Snacks and confectionery'),
+('Household', 'Household items'),
+('Personal Care', 'Personal care products')
+ON DUPLICATE KEY UPDATE name=name;
+
+-- Create stored procedures for common operations
+DELIMITER //
+
+CREATE PROCEDURE sp_update_stock(
+    IN p_product_id INT,
+    IN p_quantity_change INT,
+    IN p_user_id INT,
+    IN p_movement_type ENUM('in', 'out', 'adjustment'),
+    IN p_reason VARCHAR(255)
+)
+BEGIN
+    DECLARE current_quantity INT;
+    
+    START TRANSACTION;
+    
+    -- Get current quantity
+    SELECT quantity INTO current_quantity
+    FROM products
+    WHERE id = p_product_id
+    FOR UPDATE;
+    
+    -- Update product quantity
+    UPDATE products
+    SET quantity = quantity + p_quantity_change
+    WHERE id = p_product_id;
+    
+    -- Record stock movement
+    INSERT INTO stock_movements (
+        product_id,
+        user_id,
+        movement_type,
+        quantity,
+        reason,
+        movement_time
+    ) VALUES (
+        p_product_id,
+        p_user_id,
+        p_movement_type,
+        p_quantity_change,
+        p_reason,
+        NOW()
+    );
+    
+    COMMIT;
+END//
+
+CREATE PROCEDURE sp_process_sale(
+    IN p_product_id INT,
+    IN p_user_id INT,
+    IN p_quantity INT,
+    IN p_payment_method VARCHAR(10)
+)
+BEGIN
+    DECLARE v_unit_price DECIMAL(10,2);
+    DECLARE v_current_stock INT;
+    DECLARE v_total_amount DECIMAL(10,2);
+    
+    START TRANSACTION;
+    
+    -- Get product details
+    SELECT price, quantity 
+    INTO v_unit_price, v_current_stock
+    FROM products 
+    WHERE id = p_product_id
+    FOR UPDATE;
+    
+    -- Check stock availability
+    IF v_current_stock >= p_quantity THEN
+        -- Calculate total amount
+        SET v_total_amount = v_unit_price * p_quantity;
+        
+        -- Update stock
+        UPDATE products 
+        SET quantity = quantity - p_quantity
+        WHERE id = p_product_id;
+        
+        -- Record sale
+        INSERT INTO sales (
+            product_id,
+            user_id,
+            quantity_sold,
+            unit_price,
+            total_amount,
+            payment_method,
+            sale_time
+        ) VALUES (
+            p_product_id,
+            p_user_id,
+            p_quantity,
+            v_unit_price,
+            v_total_amount,
+            p_payment_method,
+            NOW()
+        );
+        
+        -- Record stock movement
+        INSERT INTO stock_movements (
+            product_id,
+            user_id,
+            movement_type,
+            quantity,
+            reason,
+            movement_time
+        ) VALUES (
+            p_product_id,
+            p_user_id,
+            'out',
+            -p_quantity,
+            'Sale',
+            NOW()
+        );
+        
+        COMMIT;
+        SELECT 'Success' as result;
+    ELSE
+        ROLLBACK;
+        SELECT 'Insufficient stock' as result;
+    END IF;
+END//
+
+DELIMITER ;
+
+
