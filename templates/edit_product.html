@@ -1,0 +1,149 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0 rounded-lg mt-5">
+                <!-- Gradient Header -->
+                <div class="card-header text-white" style="background: linear-gradient(135deg, #4CAF50, #45B649);">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h3 class="font-weight-light mb-0">
+                            <i class="fas fa-edit mr-2"></i>Edit Product
+                        </h3>
+                        <a href="{{ url_for('stock') }}" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left mr-1"></i>Back to Stock
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body bg-light">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    <i class="fas fa-info-circle mr-2"></i>{{ message }}
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="{{ url_for('edit_product', id=product.id) }}" class="needs-validation" novalidate>
+                        <!-- Product Name -->
+                        <div class="form-group">
+                            <label for="product_name" class="font-weight-bold text-success">
+                                <i class="fas fa-box mr-2"></i>Product Name
+                            </label>
+                            <input type="text" 
+                                   class="form-control form-control-lg" 
+                                   id="product_name" 
+                                   name="product_name" 
+                                   value="{{ product.product_name }}"
+                                   required>
+                            <div class="invalid-feedback">
+                                Please enter a product name.
+                            </div>
+                        </div>
+
+                        <!-- Price -->
+                        <div class="form-group">
+                            <label for="price" class="font-weight-bold text-success">
+                                <i class="fas fa-tag mr-2"></i>Price
+                            </label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white">
+                                        <i class="fas fa-dollar-sign text-success"></i>
+                                    </span>
+                                </div>
+                                <input type="number" 
+                                       class="form-control form-control-lg" 
+                                       id="price" 
+                                       name="price" 
+                                       value="{{ product.price }}"
+                                       step="0.01" 
+                                       min="0.01"
+                                       required>
+                            </div>
+                        </div>
+
+                        <!-- Quantity -->
+                        <div class="form-group">
+                            <label for="quantity" class="font-weight-bold text-success">
+                                <i class="fas fa-cubes mr-2"></i>Quantity
+                            </label>
+                            <input type="number" 
+                                   class="form-control form-control-lg" 
+                                   id="quantity" 
+                                   name="quantity" 
+                                   value="{{ product.quantity }}"
+                                   min="0"
+                                   required>
+                        </div>
+
+                        <!-- Category -->
+                        <div class="form-group">
+                            <label for="category" class="font-weight-bold text-success">
+                                <i class="fas fa-folder mr-2"></i>Category
+                            </label>
+                            <select class="custom-select form-control-lg" id="category" name="category">
+                                <option value="">Select a category...</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" 
+                                        {% if category.id == product.category %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="form-group">
+                            <label for="description" class="font-weight-bold text-success">
+                                <i class="fas fa-align-left mr-2"></i>Description
+                            </label>
+                            <textarea class="form-control form-control-lg" 
+                                      id="description" 
+                                      name="description" 
+                                      rows="3">{{ product.description }}</textarea>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="form-group mt-4 d-flex justify-content-between">
+                            <button type="submit" class="btn btn-success btn-lg px-5">
+                                <i class="fas fa-save mr-2"></i>Save Changes
+                            </button>
+                            <button type="button" 
+                                    class="btn btn-danger btn-lg px-5" 
+                                    onclick="confirmDelete({{ product.id }})">
+                                <i class="fas fa-trash-alt mr-2"></i>Delete
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(id) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "This action cannot be undone!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = "{{ url_for('delete_product', id=product.id) }}";
+        }
+    })
+}
+</script>
+{% endblock %}

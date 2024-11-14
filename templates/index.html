@@ -1,0 +1,135 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="hero-section text-center">
+    <h1 class="display-4 mb-4">Welcome to City Star Supermarket</h1>
+    <p class="lead mb-5">Automate your supermarket operations efficiently.</p>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-4 mb-4">
+            <div class="feature-card">
+                <a href="{{ url_for('stock') }}" class="text-decoration-none">
+                    <div class="icon-wrapper">
+                        <i class="fas fa-box-open"></i>
+                    </div>
+                    <h3>Manage Stock</h3>
+                    <p>Track and manage your inventory efficiently</p>
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="feature-card">
+                <a href="{{ url_for('sales') }}" class="text-decoration-none">
+                    <div class="icon-wrapper">
+                        <i class="fas fa-cash-register"></i>
+                    </div>
+                    <h3>Process Sales</h3>
+                    <p>Quick and easy sales transactions</p>
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="feature-card">
+                <a href="{{ url_for('report') }}" class="text-decoration-none">
+                    <div class="icon-wrapper">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3>View Reports</h3>
+                    <p>Analyze your business performance</p>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+        color: white;
+        padding: 4rem 2rem;
+        border-radius: 15px;
+        margin-bottom: 3rem;
+        box-shadow: 0 10px 30px rgba(255, 107, 53, 0.2);
+    }
+
+    .hero-section .display-4 {
+        font-family: 'Raleway', sans-serif;
+        font-weight: 700;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        margin-bottom: 1rem;
+    }
+
+    .hero-section .lead {
+        font-size: 1.5rem;
+        font-weight: 300;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .feature-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        transition: all 0.3s ease;
+        height: 100%;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(255, 107, 53, 0.2);
+    }
+
+    .feature-card .icon-wrapper {
+        background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .feature-card:hover .icon-wrapper {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .feature-card i {
+        font-size: 2rem;
+        color: white;
+    }
+
+    .feature-card h3 {
+        color: var(--dark-text);
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .feature-card p {
+        color: #666;
+        margin-bottom: 0;
+    }
+
+    .feature-card a {
+        color: inherit;
+    }
+
+    @media (max-width: 768px) {
+        .hero-section {
+            padding: 3rem 1rem;
+        }
+        
+        .hero-section .display-4 {
+            font-size: 2.5rem;
+        }
+        
+        .hero-section .lead {
+            font-size: 1.2rem;
+        }
+    }
+</style>
+{% endblock %}

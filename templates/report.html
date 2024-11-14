@@ -1,0 +1,250 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="report-container">
+    <div class="card shadow-lg border-0">
+        <div class="card-header text-white" style="background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-chart-line mr-2"></i>Sales Report
+                </h4>
+                <div class="header-actions">
+                    <button class="btn btn-light btn-sm mr-2" onclick="exportToCSV()">
+                        <i class="fas fa-download mr-1"></i>Export CSV
+                    </button>
+                    <button class="btn btn-light btn-sm" onclick="window.print()">
+                        <i class="fas fa-print mr-1"></i>Print
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="filters p-3 bg-light border-bottom">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search...">
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <input type="date" id="dateFilter" class="form-control">
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover" id="salesTable">
+                    <thead>
+                        <tr class="bg-light">
+                            <th class="sortable" onclick="sortTable(0)">
+                                <i class="fas fa-hashtag mr-1"></i>Sale ID
+                                <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="sortable" onclick="sortTable(1)">
+                                <i class="fas fa-box mr-1"></i>Product
+                                <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="sortable" onclick="sortTable(2)">
+                                <i class="fas fa-sort-numeric-up-alt mr-1"></i>Quantity
+                                <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="sortable" onclick="sortTable(3)">
+                                <i class="fas fa-clock mr-1"></i>Sale Time
+                                <i class="fas fa-sort ml-1"></i>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales %}
+                        <tr>
+                            <td>{{ sale.id }}</td>
+                            <td>{{ sale.product_id }}</td>
+                            <td>{{ sale.quantity_sold }}</td>
+                            <td>{{ sale.sale_time }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if not sales %}
+            <div class="text-center py-5">
+                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No sales data available</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .report-container {
+        animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table th {
+        border-top: none;
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+
+    .sortable {
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .sortable:hover {
+        background-color: #e9ecef;
+    }
+
+    .filters {
+        transition: all 0.3s ease;
+    }
+
+    .form-control {
+        border-radius: 5px;
+        border: 1px solid #ced4da;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-orange);
+        box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+    }
+
+    .btn-light {
+        background-color: white;
+        border: 1px solid #dee2e6;
+        transition: all 0.3s ease;
+    }
+
+    .btn-light:hover {
+        background-color: #f8f9fa;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    @media print {
+        .header-actions, .filters {
+            display: none !important;
+        }
+        .card {
+            box-shadow: none !important;
+        }
+    }
+</style>
+
+<script>
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+        const searchText = this.value.toLowerCase();
+        const table = document.getElementById('salesTable');
+        const rows = table.getElementsByTagName('tr');
+
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            const cells = row.getElementsByTagName('td');
+            let found = false;
+
+            for (let cell of cells) {
+                if (cell.textContent.toLowerCase().includes(searchText)) {
+                    found = true;
+                    break;
+                }
+            }
+
+            row.style.display = found ? '' : 'none';
+        }
+    });
+
+    // Date filter
+    document.getElementById('dateFilter').addEventListener('change', function() {
+        const filterDate = this.value;
+        const table = document.getElementById('salesTable');
+        const rows = table.getElementsByTagName('tr');
+
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            const saleDate = row.cells[3].textContent.split(' ')[0]; // Assumes date is first part of sale_time
+            row.style.display = !filterDate || saleDate === filterDate ? '' : 'none';
+        }
+    });
+
+    // Table sorting
+    function sortTable(n) {
+        const table = document.getElementById('salesTable');
+        let switching = true;
+        let dir = 'asc';
+        let switchcount = 0;
+
+        while (switching) {
+            switching = false;
+            const rows = table.rows;
+
+            for (let i = 1; i < rows.length - 1; i++) {
+                let shouldSwitch = false;
+                const x = rows[i].getElementsByTagName('td')[n];
+                const y = rows[i + 1].getElementsByTagName('td')[n];
+                
+                if (dir === 'asc') {
+                    if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+                        shouldSwitch = true;
+                        break;
+                    }
+                } else {
+                    if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+                        shouldSwitch = true;
+                        break;
+                    }
+                }
+
+                if (shouldSwitch) {
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    switching = true;
+                    switchcount++;
+                }
+            }
+
+            if (switchcount === 0 && dir === 'asc') {
+                dir = 'desc';
+                switching = true;
+            }
+        }
+    }
+
+    // Export to CSV
+    function exportToCSV() {
+        const table = document.getElementById('salesTable');
+        let csv = [];
+        const rows = table.getElementsByTagName('tr');
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = [], cols = rows[i].querySelectorAll('td, th');
+            
+            for (let j = 0; j < cols.length; j++) {
+                row.push(cols[j].innerText);
+            }
+            
+            csv.push(row.join(','));
+        }
+
+        const csvFile = new Blob([csv.join('\n')], { type: 'text/csv' });
+        const downloadLink = document.createElement('a');
+        downloadLink.download = 'sales_report.csv';
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+        downloadLink.style.display = 'none';
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+    }
+</script>
+{% endblock %}

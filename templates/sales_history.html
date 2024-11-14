@@ -1,0 +1,279 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="history-container">
+    <div class="card shadow-lg border-0">
+        <div class="card-header text-white" style="background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-history mr-2"></i>Sales History
+                </h4>
+                <div class="header-actions">
+                    <button class="btn btn-light btn-sm mr-2" id="filterToggle">
+                        <i class="fas fa-filter mr-1"></i>Filters
+                    </button>
+                    <button class="btn btn-light btn-sm" onclick="window.print()">
+                        <i class="fas fa-print mr-1"></i>Print
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-panel p-3 bg-light border-bottom" style="display: none;">
+            <div class="row">
+                <div class="col-md-3 mb-2">
+                    <label class="small mb-1">Search</label>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search any field...">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="small mb-1">Date Range</label>
+                    <input type="date" id="dateFrom" class="form-control mb-2" placeholder="From">
+                    <input type="date" id="dateTo" class="form-control" placeholder="To">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="small mb-1">Quantity Range</label>
+                    <div class="input-group mb-2">
+                        <input type="number" id="quantityMin" class="form-control" placeholder="Min">
+                        <input type="number" id="quantityMax" class="form-control" placeholder="Max">
+                    </div>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="small mb-1">Actions</label>
+                    <button class="btn btn-secondary btn-block mb-2" onclick="resetFilters()">
+                        <i class="fas fa-undo mr-1"></i>Reset Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="historyTable">
+                    <thead>
+                        <tr class="bg-light">
+                            <th class="sortable px-3" onclick="sortTable(0)">
+                                <i class="fas fa-hashtag mr-1"></i>Sale ID
+                                <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="sortable px-3" onclick="sortTable(1)">
+                                <i class="fas fa-box mr-1"></i>Product ID
+                                <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="sortable px-3" onclick="sortTable(2)">
+                                <i class="fas fa-sort-numeric-up-alt mr-1"></i>Quantity
+                                <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="sortable px-3" onclick="sortTable(3)">
+                                <i class="fas fa-clock mr-1"></i>Sale Time
+                                <i class="fas fa-sort ml-1"></i>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales %}
+                        <tr class="sale-row">
+                            <td class="px-3">{{ sale.id }}</td>
+                            <td class="px-3">{{ sale.product_id }}</td>
+                            <td class="px-3">{{ sale.quantity_sold }}</td>
+                            <td class="px-3">{{ sale.sale_time }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if not sales %}
+            <div class="text-center py-5">
+                <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No sales history available</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .history-container {
+        animation: slideIn 0.5s ease;
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .table th {
+        font-weight: 600;
+        background-color: #f8f9fa;
+        border-top: none;
+    }
+
+    .sortable {
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.3s ease;
+    }
+
+    .sortable:hover {
+        background-color: #e9ecef;
+    }
+
+    .sale-row {
+        transition: background-color 0.3s ease;
+    }
+
+    .sale-row:hover {
+        background-color: rgba(255, 107, 53, 0.05);
+    }
+
+    .form-control {
+        border-radius: 5px;
+        border: 1px solid #ced4da;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-orange);
+        box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+    }
+
+    .btn-light {
+        background-color: white;
+        border: 1px solid #dee2e6;
+        transition: all 0.3s ease;
+    }
+
+    .btn-light:hover {
+        background-color: #f8f9fa;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .filter-panel {
+        transition: all 0.3s ease;
+    }
+
+    @media print {
+        .header-actions, .filter-panel {
+            display: none !important;
+        }
+        .card {
+            box-shadow: none !important;
+        }
+    }
+</style>
+
+<script>
+    // Toggle filter panel
+    document.getElementById('filterToggle').addEventListener('click', function() {
+        const filterPanel = document.querySelector('.filter-panel');
+        filterPanel.style.display = filterPanel.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('keyup', filterTable);
+    document.getElementById('dateFrom').addEventListener('change', filterTable);
+    document.getElementById('dateTo').addEventListener('change', filterTable);
+    document.getElementById('quantityMin').addEventListener('input', filterTable);
+    document.getElementById('quantityMax').addEventListener('input', filterTable);
+
+    function filterTable() {
+        const searchText = document.getElementById('searchInput').value.toLowerCase();
+        const dateFrom = document.getElementById('dateFrom').value;
+        const dateTo = document.getElementById('dateTo').value;
+        const quantityMin = document.getElementById('quantityMin').value;
+        const quantityMax = document.getElementById('quantityMax').value;
+
+        const rows = document.getElementsByClassName('sale-row');
+
+        for (let row of rows) {
+            let showRow = true;
+            const cells = row.getElementsByTagName('td');
+            
+            // Text search
+            if (searchText) {
+                showRow = false;
+                for (let cell of cells) {
+                    if (cell.textContent.toLowerCase().includes(searchText)) {
+                        showRow = true;
+                        break;
+                    }
+                }
+            }
+
+            // Date range
+            if (showRow && (dateFrom || dateTo)) {
+                const saleDate = new Date(cells[3].textContent);
+                if (dateFrom && new Date(dateFrom) > saleDate) showRow = false;
+                if (dateTo && new Date(dateTo) < saleDate) showRow = false;
+            }
+
+            // Quantity range
+            if (showRow && (quantityMin || quantityMax)) {
+                const quantity = parseInt(cells[2].textContent);
+                if (quantityMin && quantity < quantityMin) showRow = false;
+                if (quantityMax && quantity > quantityMax) showRow = false;
+            }
+
+            row.style.display = showRow ? '' : 'none';
+        }
+    }
+
+    // Reset filters
+    function resetFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('dateFrom').value = '';
+        document.getElementById('dateTo').value = '';
+        document.getElementById('quantityMin').value = '';
+        document.getElementById('quantityMax').value = '';
+        filterTable();
+    }
+
+    // Table sorting
+    function sortTable(n) {
+        const table = document.getElementById('historyTable');
+        let switching = true;
+        let dir = 'asc';
+        let switchcount = 0;
+
+        while (switching) {
+            switching = false;
+            const rows = table.rows;
+
+            for (let i = 1; i < rows.length - 1; i++) {
+                let shouldSwitch = false;
+                const x = rows[i].getElementsByTagName('td')[n];
+                const y = rows[i + 1].getElementsByTagName('td')[n];
+                
+                const xValue = isNaN(x.innerHTML) ? x.innerHTML.toLowerCase() : parseFloat(x.innerHTML);
+                const yValue = isNaN(y.innerHTML) ? y.innerHTML.toLowerCase() : parseFloat(y.innerHTML);
+                
+                if (dir === 'asc') {
+                    if (xValue > yValue) {
+                        shouldSwitch = true;
+                        break;
+                    }
+                } else {
+                    if (xValue < yValue) {
+                        shouldSwitch = true;
+                        break;
+                    }
+                }
+            }
+
+            if (shouldSwitch) {
+                rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                switching = true;
+                switchcount++;
+            } else if (switchcount === 0 && dir === 'asc') {
+                dir = 'desc';
+                switching = true;
+            }
+        }
+    }
+</script>
+{% endblock %}

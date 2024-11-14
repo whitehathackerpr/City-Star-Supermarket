@@ -1,0 +1,351 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Products
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ total_products }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-boxes fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Low Stock Items
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ low_stock }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Today's Sales
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                UGX{{ "%.2f"|format(daily_sales_total or 0) }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Sales Count Today
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ daily_sales_count }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Sales Overview</h6>
+                    <div class="dropdown no-arrow">
+                        <button class="btn btn-link btn-sm dropdown-toggle" type="button" id="salesDropdown" 
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" 
+                             aria-labelledby="salesDropdown">
+                            <a class="dropdown-item" href="#" onclick="updateChart('week')">Last Week</a>
+                            <a class="dropdown-item" href="#" onclick="updateChart('month')">Last Month</a>
+                            <a class="dropdown-item" href="#" onclick="updateChart('year')">Last Year</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="salesChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Top Selling Products</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="topProductsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity and Low Stock Tables -->
+    <div class="row">
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Sales</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Amount</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentSales">
+                                <!-- Populated via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Low Stock Alert</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Stock</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lowStockItems">
+                                <!-- Populated via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom styles for this template -->
+<style>
+    .dashboard-container {
+        animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .border-left-primary {
+        border-left: 4px solid var(--primary-orange) !important;
+    }
+
+    .border-left-success {
+        border-left: 4px solid #1cc88a !important;
+    }
+
+    .border-left-info {
+        border-left: 4px solid #36b9cc !important;
+    }
+
+    .border-left-danger {
+        border-left: 4px solid #e74a3b !important;
+    }
+
+    .card {
+        transition: transform 0.3s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+    }
+
+    .text-primary {
+        color: var(--primary-orange) !important;
+    }
+
+    .table th {
+        background-color: #f8f9fc;
+    }
+
+    .dropdown-item:hover {
+        background-color: #f8f9fc;
+        color: var(--primary-orange);
+    }
+</style>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Initialize charts when the document is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeSalesChart();
+        initializeTopProductsChart();
+        loadRecentSales();
+        loadLowStockItems();
+    });
+
+    function initializeSalesChart() {
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        window.salesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [], // Will be populated with dates
+                datasets: [{
+                    label: 'Sales',
+                    data: [], // Will be populated with sales data
+                    borderColor: 'rgb(255, 107, 53)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+        
+        // Load initial data
+        updateChart('week');
+    }
+
+    function initializeTopProductsChart() {
+        const ctx = document.getElementById('topProductsChart').getContext('2d');
+        window.topProductsChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: [], // Will be populated with product names
+                datasets: [{
+                    data: [], // Will be populated with sales data
+                    backgroundColor: [
+                        'rgb(255, 107, 53)',
+                        'rgb(28, 200, 138)',
+                        'rgb(54, 185, 204)',
+                        'rgb(231, 74, 59)',
+                        'rgb(246, 194, 62)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+        
+        // Load initial data
+        loadTopProducts();
+    }
+
+    function updateChart(period) {
+        // Fetch data from server based on period
+        fetch(`/api/sales_data/${period}`)
+            .then(response => response.json())
+            .then(data => {
+                window.salesChart.data.labels = data.labels;
+                window.salesChart.data.datasets[0].data = data.values;
+                window.salesChart.update();
+            });
+    }
+
+    function loadTopProducts() {
+        // Fetch top products data from server
+        fetch('/api/top_products')
+            .then(response => response.json())
+            .then(data => {
+                window.topProductsChart.data.labels = data.labels;
+                window.topProductsChart.data.datasets[0].data = data.values;
+                window.topProductsChart.update();
+            });
+    }
+
+    function loadRecentSales() {
+        // Fetch recent sales data from server
+        fetch('/api/recent_sales')
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('recentSales');
+                tbody.innerHTML = data.map(sale => `
+                    <tr>
+                        <td>${sale.product}</td>
+                        <td>${sale.quantity}</td>
+                        <td>UGX ${sale.amount.toFixed(2)}</td>
+                        <td>${new Date(sale.time).toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            });
+    }
+
+    function loadLowStockItems() {
+        // Fetch low stock items from server
+        fetch('/api/low_stock')
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('lowStockItems');
+                tbody.innerHTML = data.map(item => `
+                    <tr>
+                        <td>${item.product}</td>
+                        <td>
+                            <span class="badge badge-danger">${item.stock}</span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" 
+                                    onclick="location.href='/edit_product/${item.id}'">
+                                Update Stock
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            });
+    }
+</script>
+{% endblock %} 

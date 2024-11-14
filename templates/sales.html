@@ -1,0 +1,310 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0 rounded-lg mt-5">
+                <!-- Gradient Header -->
+                <div class="card-header text-white" style="background: linear-gradient(135deg, #FF6B6B, #FF8E53);">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h3 class="font-weight-light mb-0">
+                            <i class="fas fa-shopping-cart mr-2"></i>Process Sale
+                        </h3>
+                        <div class="header-actions">
+                            <a href="{{ url_for('sales_history') }}" class="btn btn-light btn-sm">
+                                <i class="fas fa-history mr-1"></i>Sales History
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body bg-light">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    {% if products %}
+                    <form method="POST" action="{{ url_for('sales') }}" id="saleForm" class="needs-validation" novalidate>
+                        <!-- Product Selection -->
+                        <div class="form-group">
+                            <label for="product_id" class="font-weight-bold text-primary">
+                                <i class="fas fa-box mr-1"></i>Select Product
+                            </label>
+                            <select class="form-control form-control-lg custom-select" 
+                                    id="product_id" 
+                                    name="product_id" 
+                                    required>
+                                <option value="">Choose a product...</option>
+                                {% for product in products %}
+                                <option value="{{ product.id }}" 
+                                        data-price="{{ product.price }}"
+                                        data-stock="{{ product.quantity }}">
+                                    {{ product.product_name }} - UGX{{ "%.2f"|format(product.price) }} 
+                                    {% if product.quantity < 10 %}
+                                        <span class="text-danger">(Low Stock: {{ product.quantity }})</span>
+                                    {% else %}
+                                        (Stock: {{ product.quantity }})
+                                    {% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Please select a product.</div>
+                        </div>
+
+                        <!-- Quantity Input -->
+                        <div class="form-group">
+                            <label for="quantity" class="font-weight-bold text-primary">
+                                <i class="fas fa-hashtag mr-1"></i>Quantity
+                            </label>
+                            <input type="number" 
+                                   class="form-control form-control-lg" 
+                                   id="quantity" 
+                                   name="quantity" 
+                                   min="1" 
+                                   placeholder="Enter quantity"
+                                   required>
+                            <div class="invalid-feedback">Please enter a valid quantity.</div>
+                        </div>
+
+                        <!-- Total Amount -->
+                        <div class="form-group">
+                            <label class="font-weight-bold text-primary">
+                                <i class="fas fa-dollar-sign mr-1"></i>Total Amount
+                            </label>
+                            <div class="input-group input-group-lg">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-primary text-white">UGX</span>
+                                </div>
+                                <input type="text" 
+                                       class="form-control form-control-lg font-weight-bold"
+                                       id="totalAmount" 
+                                       readonly>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="form-group mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg btn-block shadow-sm">
+                                <i class="fas fa-check-circle mr-2"></i>Process Sale
+                            </button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-warning shadow-sm">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>No products available for sale.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add this CSS to your styles.css -->
+<style>
+.card {
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.card-header {
+    padding: 1.5rem;
+}
+
+.form-control {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #FF8E53;
+    box-shadow: 0 0 0 0.2rem rgba(255, 142, 83, 0.25);
+}
+
+.custom-select {
+    background-color: white;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+}
+
+.input-group-text {
+    border-radius: 10px 0 0 10px;
+    border: none;
+}
+
+.alert {
+    border-radius: 10px;
+    border: none;
+}
+
+.alert-dismissible .close {
+    padding: 0.75rem 1.25rem;
+}
+
+.invalid-feedback {
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+/* Animation for form elements */
+.form-control, .btn {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hover effects */
+.form-control:hover {
+    border-color: #FF8E53;
+}
+
+/* Custom scrollbar for select */
+select::-webkit-scrollbar {
+    width: 8px;
+}
+
+select::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+select::-webkit-scrollbar-thumb {
+    background: #FF8E53;
+    border-radius: 4px;
+}
+
+select::-webkit-scrollbar-thumb:hover {
+    background: #FF6B6B;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const productSelect = document.getElementById('product_id');
+    const quantityInput = document.getElementById('quantity');
+    const totalAmountInput = document.getElementById('totalAmount');
+    const saleForm = document.getElementById('saleForm');
+
+    function updateTotal() {
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        const price = selectedOption ? parseFloat(selectedOption.dataset.price) : 0;
+        const quantity = parseInt(quantityInput.value) || 0;
+        const total = price * quantity;
+        totalAmountInput.value = total.toFixed(2);
+        
+        // Update quantity input max attribute
+        if (selectedOption && selectedOption.value) {
+            const stock = parseInt(selectedOption.dataset.stock);
+            quantityInput.max = stock;
+        }
+    }
+
+    productSelect.addEventListener('change', updateTotal);
+    quantityInput.addEventListener('input', updateTotal);
+
+    // Form validation
+    saleForm.addEventListener('submit', function(e) {
+        if (!this.checkValidity()) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        if (!selectedOption.value) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'warning',
+                title: 'Product Required',
+                text: 'Please select a product.',
+                confirmButtonColor: '#FF6B6B'
+            });
+            return;
+        }
+
+        const stock = parseInt(selectedOption.dataset.stock);
+        const quantity = parseInt(quantityInput.value);
+
+        if (quantity > stock) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'error',
+                title: 'Insufficient Stock',
+                text: `Only UGX{stock} items available.`,
+                confirmButtonColor: '#FF6B6B'
+            });
+            return;
+        }
+
+        if (quantity <= 0) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'warning',
+                title: 'Invalid Quantity',
+                text: 'Please enter a valid quantity.',
+                confirmButtonColor: '#FF6B6B'
+            });
+            return;
+        }
+
+        // Add confirmation dialog
+        e.preventDefault();
+        const total = parseFloat(totalAmountInput.value);
+        Swal.fire({
+            title: 'Confirm Sale',
+            html: `
+                <div class="text-left">
+                    <p><strong>Product:</strong> UGX{selectedOption.text}</p>
+                    <p><strong>Quantity:</strong> UGX{quantity}</p>
+                    <p><strong>Total:</strong> UGXUGX{total.toFixed(2)}</p>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#FF6B6B',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Process Sale',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                saleForm.submit();
+            }
+        });
+    });
+
+    // Initialize tooltips
+    UGX('[data-toggle="tooltip"]').tooltip();
+});
+</script>
+
+<!-- Add SweetAlert2 for better alerts -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock %}
